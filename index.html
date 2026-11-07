@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Otel Rusçası - Ekstra Pratik</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+    <header class="app-header">
+        <div class="brand"><div class="brand-mark">RU</div><div><h1>OTEL RUSÇASI</h1><small>EKSTRA PRATİK</small></div></div>
+        <div class="header-controls">
+            <label class="speed-control">Hız:
+                <select id="speech-speed">
+                    <option value="auto">Otomatik</option>
+                    <option value="slow">Biraz Yavaş</option>
+                    <option value="heavy">Biraz Ağır</option>
+                </select>
+            </label>
+            <button id="reverse-toggle" class="mode-button">Yön: <span id="reverse-label">RU → TR</span> <i class="fa-solid fa-arrows-rotate"></i></button>
+        </div>
+    </header>
+    <main class="main-content">
+        <nav class="tabs">
+            <button id="tab-grammar" class="tab active"><i class="fa-solid fa-spell-check"></i> 1. GRAMER</button>
+            <button id="tab-sentence" class="tab"><i class="fa-solid fa-cubes"></i> 2. CÜMLE KURMA</button>
+        </nav>
+        <nav id="grammar-subtabs" class="subtabs">
+            <button id="subtab-fiil" class="subtab active">⚡ Fiiller</button>
+            <button id="subtab-isim" class="subtab">🏨 İsimler</button>
+        </nav>
+        <nav id="sentence-subtabs" class="subtabs" hidden>
+            <button id="subtab-tiles" class="subtab active">🧩 Kelime Kartları</button>
+            <button id="subtab-mc" class="subtab">📝 Şıklı Test</button>
+        </nav>
+        <section class="question-card">
+            <div class="question-top"><span id="question-tag" class="question-tag">FİİL SÖZLÜĞÜ</span><div class="question-actions"><button id="speak-question" class="speak-button" aria-label="Rusça soruyu seslendir"><i class="fa-solid fa-volume-high"></i></button><button id="show-info" class="info-button" aria-label="Kalıp bilgisini göster" hidden><i class="fa-solid fa-info"></i></button></div></div>
+            <p class="instruction">Doğru karşılığını veya cümleyi seçin:<span class="hint">Kelimenin üzerine gelin veya dokunun, anlamını görün.</span></p>
+            <div id="interactive-question-box" class="question-text"></div>
+            <div id="word-tooltip" class="tooltip" hidden><strong id="tooltip-target-word"></strong><p id="tooltip-meaning"></p></div>
+        </section>
+        <section class="answer-area">
+            <div id="mc-options-container" class="choices"></div>
+            <div id="tile-builder-container" class="tile-builder" hidden>
+                <div id="sentence-target-box" class="sentence-target"></div>
+                <div id="sentence-source-tiles" class="tile-list"></div>
+                <button id="btn-check-tile" class="check-button">KONTROL ET</button>
+            </div>
+        </section>
+    </main>
+    <footer id="feedback-bar" class="feedback">
+        <div class="feedback-inner"><div id="feedback-icon" class="feedback-icon"></div><div><h2 id="feedback-title" class="feedback-title"></h2><p id="feedback-detail" class="feedback-detail"></p></div></div>
+        <button id="feedback-btn" class="continue-button">DEVAM ET →</button>
+    </footer>
+</div>
+<div id="info-modal" class="info-modal" hidden role="dialog" aria-modal="true" aria-labelledby="info-title">
+    <article class="info-dialog">
+        <div class="info-dialog-header">
+            <h2 id="info-title"></h2>
+            <button id="close-info" class="close-info" aria-label="Bilgi penceresini kapat"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="info-content" class="info-content"></div>
+    </article>
+</div>
+<script src="data.js"></script>
+<script src="info.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
