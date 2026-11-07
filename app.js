@@ -471,3 +471,19 @@ function toggleReverseMode() {
 function speakQuestionText() {
     if (state.current) speakRussianForCurrentQuestion();
 }
+
+const brandMark = document.querySelector('.brand-mark');
+
+if (brandMark) {
+  brandMark.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Tam ekran moda geçilemedi: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  });
+}
