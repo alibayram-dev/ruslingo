@@ -51,6 +51,8 @@ function initialise() {
 }
 
 function refreshQuestionSession() {
+    clearTimeout(state.speechTimer);
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     state.queue = [];
     fillQueue();
     showNextQuestion();
@@ -182,7 +184,7 @@ function renderQuestion() {
     $("question-tag").textContent = state.current.tag;
     const questionBox = $("interactive-question-box");
     questionBox.replaceChildren();
-    state.current.promptText.split(" ").forEach(word => {
+    tokenizeSentence(state.current.promptText).forEach(word => {
         const button = document.createElement("button");
         button.className = "question-word";
         button.type = "button";
@@ -198,6 +200,10 @@ function renderQuestion() {
     const infoButton = $("show-info");
     infoButton.hidden = state.current.type !== "sentence" || !state.current.infoId;
     setAnswerSurface();
+}
+
+function tokenizeSentence(text) {
+    return text.match(/\S+/g) || [];
 }
 
 function setAnswerSurface() {
@@ -217,6 +223,7 @@ function renderChoices() {
         button.className = "choice";
         button.innerHTML = `<span class="choice-letter">${String.fromCharCode(65 + index)}</span><span>${option}</span>`;
         button.addEventListener("click", () => checkAnswer(option));
+        button.disabled = state.answered;
         container.append(button);
     });
 }
@@ -238,16 +245,20 @@ function renderTileLists() {
     }
     state.selectedTiles.forEach((word, index) => {
         const tile = createTile(word, true, () => {
+            if (state.answered) return;
             state.availableTiles.push(state.selectedTiles.splice(index, 1)[0]);
             renderTileLists();
         });
+        tile.disabled = state.answered;
         target.append(tile);
     });
     state.availableTiles.forEach((word, index) => {
         const tile = createTile(word, false, () => {
+            if (state.answered) return;
             state.selectedTiles.push(state.availableTiles.splice(index, 1)[0]);
             renderTileLists();
         });
+        tile.disabled = state.answered;
         source.append(tile);
     });
 }
@@ -264,16 +275,25 @@ function createTile(word, selected, onClick) {
 function checkAnswer(answer) {
     if (state.answered) return;
     state.answered = true;
-    const correct = answer === state.current.correctAnswer;
+    const correct = normalizeAnswer(answer) === normalizeAnswer(state.current.correctAnswer);
     if (containsRussian(answer)) speakRussian(answer);
     else speakRussianForCurrentQuestion();
     showFeedback(correct, state.current.correctAnswer);
     if (!correct) speakRussianAfterDelay(state.current.correctAnswer);
 }
 
+function normalizeAnswer(answer) {
+    return answer
+        .normalize("NFC")
+        .replace(/\s+([,.!?;:])/g, "$1")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLocaleLowerCase("tr-TR");
+}
+
 function checkTileAnswer() {
     if (!state.selectedTiles.length || state.answered) return;
-    checkAnswer(state.selectedTiles.join(" "));
+    checkAnswer(formatTokens(state.selectedTiles));
 }
 
 function showFeedback(correct, answer) {
@@ -452,7 +472,6 @@ function playAnswerSound(correct) {
 }
 
 function setMode(mode) {
-    if (state.mode === mode) return;
     state.mode = mode;
     $("tab-grammar").classList.toggle("active", mode === "grammar");
     $("tab-sentence").classList.toggle("active", mode === "sentence");
@@ -470,11 +489,10 @@ function setCategory(category) {
 }
 
 function setAnswerType(type) {
-    if (state.answerType === type) return;
     state.answerType = type;
     $("subtab-tiles").classList.toggle("active", type === "tiles");
     $("subtab-mc").classList.toggle("active", type === "mc");
-    if (state.mode === "sentence") setAnswerSurface();
+    if (state.mode === "sentence") refreshQuestionSession();
 }
 
 function toggleReverseMode() {

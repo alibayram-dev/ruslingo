@@ -1,6 +1,6 @@
 # Ruslingo
 
-Güncel Veriyon: <code>v1.0.0 (07.11.2026)</code> 
+Güncel Versiyon: <code>v1.0.1 (07.11.2026)</code>
 
 Rusça öğrenirken özellikle otel, resepsiyon ve günlük konaklama iletişiminde ihtiyaç duyulan kelimeleri ve cümle kalıplarını pratik etmek için geliştirdiğim küçük bir web uygulaması.
 
