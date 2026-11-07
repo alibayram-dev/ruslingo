@@ -88,6 +88,17 @@ Bu proje öncelikle kişisel öğrenme ve pratik amacıyla oluşturuldu. Gelişt
 
 gibi özelliklerin eklenmesi planlanabilir.
 
+## Yakında Eklenecekler
+
+- Tarayıcıların desteklediği TTS altyapılarıyla konuşma destekli “Cevap” modu
+- GroqAI destekli, yapay zekâ ile canlı asistanla konuşma modu
+- Daha fazla kelime ve cümle kalıbı
+- Web uygulaması entegrasyonu
+
+## Geliştirme Notu
+
+Bu proje aktif olarak geliştirilmektedir. Bazı Rusça kelime karşılıklarında, cümle çevirilerinde veya gramer açıklamalarında eksik ya da hatalı ifadeler bulunabilir. Böyle bir durum fark ederseniz bildirimde bulunmanız, içeriğin düzeltilmesine yardımcı olur.
+
 ## Katkı
 
 Projeyi inceleyebilir, geliştirme fikirleri paylaşabilir veya hata bildirebilirsiniz. Özellikle Rusça kelime ve cümle karşılıklarındaki düzeltmeler projeye katkı sağlayacaktır.
