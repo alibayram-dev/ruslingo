@@ -124,5 +124,61 @@ Yardıma ihtiyacım var.
 
 ## Kural
 Rusçada “ihtiyacım var” anlamı için **Мне нужна ...** kullanılır. **помощь** dişil bir isim olduğu için **нужна** gelir. Eril isimlerle **нужен**, çoğul isimlerle **нужны** kullanılabilir.`
+    },
+    "present-affirmative": {
+        title: "P07 · Şimdiki zamanda olumlu fiil",
+        markdown: `# Я работаю
+
+## Türkçesi
+Ben çalışıyorum.
+
+## Kural
+Rusçada fiilin şimdiki zaman çekiminde mastar sonundaki **-ть** çıkarılır ve kişi eki eklenir. Birinci çekimde yaygın ekler **-ю / -ешь / -ет / -ем / -ете / -ют**, ikinci çekimde ise **-ю / -ишь / -ит / -им / -ите / -ят** şeklindedir.
+
+## Kişi ekleri
+- **я** — -ю / -у
+- **ты** — -ешь veya -ишь
+- **он / она / оно** — -ет veya -ит
+- **мы** — -ем veya -им
+- **вы** — -ете veya -ите
+- **они** — -ют veya -ят`
+    },
+    "present-negative": {
+        title: "P08 · Şimdiki zamanda olumsuzluk",
+        markdown: `# Я не работаю
+
+## Türkçesi
+Ben çalışmıyorum.
+
+## Kural
+Rusçada fiili olumsuz yapmak için çekimli fiilden önce ayrı yazılan **не** kullanılır:
+
+**özne + не + çekimli fiil**
+
+Örnek: **Я не работаю** — Ben çalışmıyorum.`
+    },
+    "present-question": {
+        title: "P09 · Şimdiki zamanda soru",
+        markdown: `# Ты работаешь?
+
+## Türkçesi
+Sen çalışıyor musun?
+
+## Kural
+Şimdiki zaman sorularında fiil kişi ekiyle çekilir ve soru çoğunlukla tonlama ile anlaşılır:
+
+**Ты + çekimli fiil?**
+
+Olumsuz soru için **Ты не работаешь?** denir.`
+    },
+    "present-activity": {
+        title: "P10 · Şu anda yapılan eylem",
+        markdown: `# Сейчас я работаю в отеле
+
+## Türkçesi
+Şu anda otelde çalışıyorum.
+
+## Kural
+Şu an gerçekleşen eylemi belirtmek için **Сейчас + çekimli fiil + yer** yapısı kullanılabilir. Rusçada şimdiki zaman, bağlama göre Türkçedeki “-yor” anlamını karşılar.`
     }
 };

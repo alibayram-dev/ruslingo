@@ -64,6 +64,18 @@ Uygulamadaki cümle kalıpları otel ve günlük iletişim senaryolarından olu�
 
 bulunur.
 
+## İçerik Sayıları
+
+Projede şu anda:
+
+- **35 fiil**
+- **128 isim**
+- **163 temel kelime**
+- **10 cümle kalıbı**
+- **23 şimdiki zaman çekimli fiil**
+- **18 birinci çekim fiili**
+- **5 ikinci çekim fiili**
+
 ## Seslendirme
 
 Seslendirme yalnızca Rusça metinler için kullanılır. Tarayıcının desteklediği Rusça ses motoru üzerinden çalışır.

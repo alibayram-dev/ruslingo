@@ -99,11 +99,12 @@ function createGrammarQuestion() {
 function createSentenceQuestion() {
     const template = random(PHRASES_DATA);
     const selectedValues = selectDictionaryValues(template.dict);
+    alignPresentTenseVerb(template, selectedValues);
     const ruTokens = resolveTemplate(template.ruTemplate, selectedValues, "ru");
     const trTokens = resolveTemplate(template.trTemplate, selectedValues, "tr");
     const wordMap = createWordMap(selectedValues, template.glossary);
-    const fullRu = ruTokens.join(" ");
-    const fullTr = trTokens.join(" ");
+    const fullRu = formatTokens(ruTokens);
+    const fullTr = formatTokens(trTokens);
     const correctTokens = state.reverse ? ruTokens : trTokens;
     const answerLanguage = state.reverse ? "ru-RU" : "tr-TR";
     const distractors = state.reverse ? template.distractors.ru : template.distractors.tr;
@@ -120,6 +121,19 @@ function createSentenceQuestion() {
         language: answerLanguage,
         infoId: template.infoId
     };
+}
+
+function alignPresentTenseVerb(template, selectedValues) {
+    if (!["present-affirmative", "present-negative"].includes(template.id)) return;
+    const subject = selectedValues.subject;
+    const matchingVerbs = template.dict.verb.filter(verb => verb.subject?.toLocaleLowerCase("ru-RU") === subject.ru.toLocaleLowerCase("ru-RU"));
+    if (matchingVerbs.length) selectedValues.verb = random(matchingVerbs);
+}
+
+function formatTokens(tokens) {
+    return tokens.reduce((sentence, token) => /^(?:[,.!?;:])$/.test(token)
+        ? `${sentence}${token}`
+        : `${sentence}${sentence ? " " : ""}${token}`, "");
 }
 
 function selectDictionaryValues(dictionary) {
@@ -152,8 +166,9 @@ function createSentenceOptions(fullRu, fullTr) {
     const options = [correct];
     const candidates = PHRASES_DATA.map(template => {
         const selectedValues = selectDictionaryValues(template.dict);
-        const ru = resolveTemplate(template.ruTemplate, selectedValues, "ru").join(" ");
-        const tr = resolveTemplate(template.trTemplate, selectedValues, "tr").join(" ");
+        alignPresentTenseVerb(template, selectedValues);
+        const ru = formatTokens(resolveTemplate(template.ruTemplate, selectedValues, "ru"));
+        const tr = formatTokens(resolveTemplate(template.trTemplate, selectedValues, "tr"));
         return state.reverse ? ru : tr;
     });
     for (const candidate of shuffle(candidates)) {
