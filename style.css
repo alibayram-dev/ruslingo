@@ -125,9 +125,20 @@ button, input, textarea, select { font: inherit; }
 .tile.selected { background: var(--blue); color: var(--bg); border-color: var(--blue); }
 .check-button, .continue-button { width: 100%; padding: 14px; border-radius: 14px; background: var(--green); color: var(--bg); font-weight: 900; }
 
-.feedback { display: none; padding: 18px 0 24px; border-top: 2px solid var(--border); }
+.feedback {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    display: none;
+    padding: 18px max(16px, calc((100vw - 900px) / 2)) 24px;
+    border-top: 2px solid var(--border);
+    background: rgba(24, 40, 48, .98);
+    box-shadow: 0 -12px 30px rgba(0, 0, 0, .28);
+}
 .feedback.visible { display: block; }
-.feedback-inner { display: flex; align-items: center; gap: 12px; }
+.feedback-inner { display: flex; align-items: center; gap: 12px; max-width: 900px; margin: 0 auto; }
 .feedback-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; font-size: 20px; }
 .feedback.correct .feedback-icon { background: var(--green); color: var(--bg); }
 .feedback.incorrect .feedback-icon { background: #f43f5e; color: white; }
@@ -135,7 +146,7 @@ button, input, textarea, select { font: inherit; }
 .feedback.correct .feedback-title { color: var(--green); }
 .feedback.incorrect .feedback-title { color: #fb7185; }
 .feedback-detail { margin: 3px 0 0; color: #d3dee2; font-size: 12px; font-weight: 700; }
-.feedback .continue-button { margin-top: 14px; }
+.feedback .continue-button { display: block; max-width: 900px; margin: 14px auto 0; }
 .feedback.incorrect .continue-button { background: #f43f5e; color: white; }
 
 .info-modal[hidden] { display: none; }
