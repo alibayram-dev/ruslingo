@@ -1,5 +1,7 @@
 # Ruslingo
 
+Güncel Veriyon: <code>v1.0.0 (07.11.2026)</code> 
+
 Rusça öğrenirken özellikle otel, resepsiyon ve günlük konaklama iletişiminde ihtiyaç duyulan kelimeleri ve cümle kalıplarını pratik etmek için geliştirdiğim küçük bir web uygulaması.
 
 Bu projeyi kendimi geliştirmek, öğrendiğim Rusça kelimeleri düzenli tekrar etmek ve kendi çalışma sistemimi oluşturmak amacıyla yazdım.
