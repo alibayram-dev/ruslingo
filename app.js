@@ -11,9 +11,12 @@ const state = {
     answered: false,
     speechTimer: null,
     speechCount: 0,
-    speechSpeed: "auto"
+    speechSpeed: "auto",
+    recentQuestionKeys: [],
+    questionStats: {}
 };
 
+const CACHE_KEY = "ruslingo-progress-v1";
 const $ = id => document.getElementById(id);
 const random = list => list[Math.floor(Math.random() * list.length)];
 const shuffle = list => {
@@ -28,9 +31,12 @@ const shuffle = list => {
 window.addEventListener("load", initialise);
 
 function initialise() {
+    loadCache();
+    syncControls();
     $("reverse-toggle").addEventListener("click", toggleReverseMode);
     $("speech-speed").addEventListener("change", event => {
         state.speechSpeed = event.target.value;
+        saveCache();
     });
     $("tab-grammar").addEventListener("click", () => setMode("grammar"));
     $("tab-sentence").addEventListener("click", () => setMode("sentence"));
@@ -50,6 +56,86 @@ function initialise() {
     refreshQuestionSession();
 }
 
+function loadCache() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+        if (cached.settings) {
+            state.reverse = cached.settings.reverse === true;
+            state.mode = ["grammar", "sentence"].includes(cached.settings.mode) ? cached.settings.mode : "grammar";
+            state.category = ["fiil", "isim"].includes(cached.settings.category) ? cached.settings.category : "fiil";
+            state.answerType = ["tiles", "mc"].includes(cached.settings.answerType) ? cached.settings.answerType : "tiles";
+            state.speechSpeed = ["auto", "slow", "heavy"].includes(cached.settings.speechSpeed)
+                ? cached.settings.speechSpeed
+                : "auto";
+        }
+        state.recentQuestionKeys = Array.isArray(cached.recentQuestionKeys)
+            ? cached.recentQuestionKeys.filter(key => typeof key === "string").slice(-30)
+            : [];
+        state.questionStats = cached.questionStats && typeof cached.questionStats === "object"
+            ? cached.questionStats
+            : {};
+    } catch (error) {
+        console.warn("Ruslingo önbelleği okunamadı; yeni çalışma verisiyle devam ediliyor.", error);
+    }
+}
+
+function saveCache() {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            version: 1,
+            savedAt: new Date().toISOString(),
+            settings: {
+                reverse: state.reverse,
+                mode: state.mode,
+                category: state.category,
+                answerType: state.answerType,
+                speechSpeed: state.speechSpeed
+            },
+            recentQuestionKeys: state.recentQuestionKeys.slice(-30),
+            questionStats: state.questionStats
+        }));
+    } catch (error) {
+        console.warn("Ruslingo çalışma verisi tarayıcıya kaydedilemedi.", error);
+    }
+}
+
+function syncControls() {
+    $("reverse-label").textContent = state.reverse ? "TR → RU" : "RU → TR";
+    $("speech-speed").value = state.speechSpeed;
+    $("tab-grammar").classList.toggle("active", state.mode === "grammar");
+    $("tab-sentence").classList.toggle("active", state.mode === "sentence");
+    $("grammar-subtabs").hidden = state.mode !== "grammar";
+    $("sentence-subtabs").hidden = state.mode !== "sentence";
+    $("subtab-fiil").classList.toggle("active", state.category === "fiil");
+    $("subtab-isim").classList.toggle("active", state.category === "isim");
+    $("subtab-tiles").classList.toggle("active", state.answerType === "tiles");
+    $("subtab-mc").classList.toggle("active", state.answerType === "mc");
+}
+
+function recordAnswer(question, correct) {
+    const stats = state.questionStats[question.key] || {
+        attempts: 0,
+        correct: 0,
+        incorrect: 0,
+        wrongStreak: 0
+    };
+    stats.attempts += 1;
+    if (correct) {
+        stats.correct += 1;
+        stats.wrongStreak = 0;
+    } else {
+        stats.incorrect += 1;
+        stats.wrongStreak += 1;
+    }
+    stats.lastAnsweredAt = new Date().toISOString();
+    state.questionStats[question.key] = stats;
+    state.recentQuestionKeys = [
+        ...state.recentQuestionKeys.filter(key => key !== question.key),
+        question.key
+    ].slice(-30);
+    saveCache();
+}
+
 function refreshQuestionSession() {
     clearTimeout(state.speechTimer);
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -60,13 +146,16 @@ function refreshQuestionSession() {
 
 function fillQueue() {
     while (state.queue.length < 5) {
-        state.queue.push(state.mode === "grammar" ? createGrammarQuestion() : createSentenceQuestion());
+        const question = state.mode === "grammar" ? createGrammarQuestion() : createSentenceQuestion();
+        if (question) state.queue.push(question);
     }
 }
 
 function showNextQuestion() {
     hideFeedback();
     hideTooltip();
+    clearTimeout(state.speechTimer);
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     fillQueue();
     state.current = state.queue.shift();
     fillQueue();
@@ -80,26 +169,30 @@ function showNextQuestion() {
 
 function createGrammarQuestion() {
     const pool = state.category === "fiil" ? VERBS_DATA : NOUNS_DATA;
-    const item = random(pool);
+    const item = chooseWeighted(pool, item => getQuestionKey("grammar", item.ru));
     const optionItems = [item];
-    while (optionItems.length < Math.min(5, pool.length)) {
-        const candidate = random(pool);
-        if (!optionItems.some(option => option.ru === candidate.ru)) optionItems.push(candidate);
+    const optionCandidates = shuffle(pool.filter(candidate => candidate !== item));
+    for (const candidate of optionCandidates) {
+        if (!optionItems.some(option => normalizeAnswer(option.tr) === normalizeAnswer(candidate.tr))) {
+            optionItems.push(candidate);
+        }
+        if (optionItems.length === Math.min(5, pool.length)) break;
     }
     const promptText = state.reverse ? item.tr : item.ru;
     return {
         type: "grammar",
+        key: getQuestionKey("grammar", item.ru),
         promptText,
         correctAnswer: state.reverse ? item.ru : item.tr,
         options: shuffle(optionItems).map(option => state.reverse ? option.ru : option.tr),
         wordMap: [{ word: promptText, meaning: state.reverse ? item.ru : item.tr }],
         tag: state.category === "fiil" ? "FİİL SÖZLÜĞÜ" : "İSİM SÖZLÜĞÜ",
-        language: state.reverse ? "ru-RU" : "tr-TR"
+        language: state.reverse ? "tr-TR" : "ru-RU"
     };
 }
 
 function createSentenceQuestion() {
-    const template = random(PHRASES_DATA);
+    const template = chooseWeighted(PHRASES_DATA, item => item.id);
     const selectedValues = selectDictionaryValues(template.dict);
     alignPresentTenseVerb(template, selectedValues);
     const ruTokens = resolveTemplate(template.ruTemplate, selectedValues, "ru");
@@ -108,11 +201,12 @@ function createSentenceQuestion() {
     const fullRu = formatTokens(ruTokens);
     const fullTr = formatTokens(trTokens);
     const correctTokens = state.reverse ? ruTokens : trTokens;
-    const answerLanguage = state.reverse ? "ru-RU" : "tr-TR";
+    const promptLanguage = state.reverse ? "tr-TR" : "ru-RU";
     const distractors = state.reverse ? template.distractors.ru : template.distractors.tr;
 
     return {
         type: "sentence",
+        key: getQuestionKey("sentence", `${template.id}|${fullRu}|${fullTr}`),
         promptText: state.reverse ? fullTr : fullRu,
         correctAnswer: state.reverse ? fullRu : fullTr,
         correctTokens,
@@ -120,7 +214,7 @@ function createSentenceQuestion() {
         options: createSentenceOptions(fullRu, fullTr),
         wordMap,
         tag: "OTEL CÜMLE KALIBI",
-        language: answerLanguage,
+        language: promptLanguage,
         infoId: template.infoId
     };
 }
@@ -139,7 +233,41 @@ function formatTokens(tokens) {
 }
 
 function selectDictionaryValues(dictionary) {
-    return Object.fromEntries(Object.entries(dictionary).map(([key, values]) => [key, random(values)]));
+    return Object.fromEntries(Object.entries(dictionary).map(([key, values]) => [key, choose(values)]));
+}
+
+function choose(values) {
+    return values[Math.floor(Math.random() * values.length)];
+}
+
+function chooseWeighted(values, keyFactory) {
+    const available = values.filter(item => !isQuestionKeyUsed(keyFactory(item)));
+    const candidates = available.length ? available : values;
+    const weighted = candidates.flatMap(item => {
+        const key = keyFactory(item);
+        const stats = findQuestionStats(key);
+        const weight = 1 + Math.min(stats?.wrongStreak || 0, 3) * 4;
+        return Array(weight).fill(item);
+    });
+    return choose(weighted);
+}
+
+function isQuestionKeyUsed(key) {
+    return state.recentQuestionKeys.some(recentKey => recentKey === key || recentKey.startsWith(`${key}|`))
+        || state.queue.some(question => question.key === key || question.key.startsWith(`${key}|`));
+}
+
+function findQuestionStats(key) {
+    if (state.questionStats[key]) return state.questionStats[key];
+    const prefix = `${key}|`;
+    return Object.entries(state.questionStats)
+        .filter(([storedKey]) => storedKey.startsWith(prefix))
+        .map(([, stats]) => stats)
+        .sort((a, b) => (b.wrongStreak || 0) - (a.wrongStreak || 0))[0];
+}
+
+function getQuestionKey(type, value) {
+    return `${type}|${state.mode}|${state.category}|${state.reverse ? "reverse" : "normal"}|${value}`;
 }
 
 function resolveTemplate(tokens, dictionary, language) {
@@ -154,13 +282,27 @@ function resolveTemplate(tokens, dictionary, language) {
 }
 
 function createWordMap(dictionary, glossary = []) {
-    const selectedWords = Object.values(dictionary).flatMap(choice => {
-        return [{ word: choice.ru, meaning: choice.tr }, { word: choice.tr, meaning: choice.ru }];
-    });
-    const fixedWords = glossary.flatMap(choice => {
-        return [{ word: choice.ru, meaning: choice.tr }, { word: choice.tr, meaning: choice.ru }];
-    });
+    const selectedWords = Object.values(dictionary).flatMap(createWordMapEntries);
+    const fixedWords = glossary.flatMap(createWordMapEntries);
     return [...selectedWords, ...fixedWords];
+}
+
+function createWordMapEntries(choice) {
+    return createWordMapEntryVariants(choice.ru, choice.tr);
+}
+
+function createWordMapEntryVariants(russian, turkish) {
+    const entries = [];
+    for (const [source, meaning] of [[russian, turkish], [turkish, russian]]) {
+        const variants = source.split("/").map(variant => variant.trim()).filter(Boolean);
+        for (const variant of variants) {
+            entries.push({ word: variant, meaning });
+            tokenizeSentence(variant).forEach(token => {
+                if (tokenizeSentence(variant).length > 1) entries.push({ word: token, meaning });
+            });
+        }
+    }
+    return entries;
 }
 
 function createSentenceOptions(fullRu, fullTr) {
@@ -174,7 +316,7 @@ function createSentenceOptions(fullRu, fullTr) {
         return state.reverse ? ru : tr;
     });
     for (const candidate of shuffle(candidates)) {
-        if (!options.includes(candidate)) options.push(candidate);
+        if (!options.some(option => normalizeAnswer(option) === normalizeAnswer(candidate))) options.push(candidate);
         if (options.length === 5) break;
     }
     return shuffle(options);
@@ -276,10 +418,10 @@ function checkAnswer(answer) {
     if (state.answered) return;
     state.answered = true;
     const correct = normalizeAnswer(answer) === normalizeAnswer(state.current.correctAnswer);
-    if (containsRussian(answer)) speakRussian(answer);
-    else speakRussianForCurrentQuestion();
+    recordAnswer(state.current, correct);
+    state.queue = [];
+    fillQueue();
     showFeedback(correct, state.current.correctAnswer);
-    if (!correct) speakRussianAfterDelay(state.current.correctAnswer);
 }
 
 function normalizeAnswer(answer) {
@@ -311,15 +453,18 @@ function hideFeedback() {
 
 function showTooltip(word, event) {
     event.stopPropagation();
-    const cleanWord = word.replace(/[.,!?]/g, "").toLocaleLowerCase("tr-TR");
-    let match = state.current.wordMap.find(item => item.word.toLocaleLowerCase("tr-TR") === cleanWord);
+    const cleanWord = normalizeLookupWord(word);
+    let match = state.current.wordMap.find(item => normalizeLookupWord(item.word) === cleanWord);
     if (!match) {
         match = [...VERBS_DATA, ...NOUNS_DATA].find(item =>
-            item.ru.toLocaleLowerCase("tr-TR") === cleanWord || item.tr.toLocaleLowerCase("tr-TR") === cleanWord
+            createWordMapEntryVariants(item.ru, item.tr)
+                .some(entry => normalizeLookupWord(entry.word) === cleanWord)
         );
     }
     $("tooltip-target-word").textContent = word;
-    $("tooltip-meaning").textContent = match ? match.meaning || (state.reverse ? match.ru : match.tr) : "Karşılık bulunamadı";
+    $("tooltip-meaning").textContent = match
+        ? match.meaning || (state.reverse ? match.ru : match.tr)
+        : "Karşılık bulunamadı";
     $("word-tooltip").hidden = false;
     clearTimeout(state.tooltipTimer);
     state.tooltipTimer = setTimeout(hideTooltip, 4000);
@@ -331,6 +476,13 @@ function hideTooltip() {
 
 function closeTooltipOnOutsideClick(event) {
     if (!$("word-tooltip").contains(event.target) && !event.target.closest(".question-word")) hideTooltip();
+}
+
+function normalizeLookupWord(word) {
+    return word
+        .replace(/[.,!?;:]/g, "")
+        .trim()
+        .toLocaleLowerCase("tr-TR");
 }
 
 function speak(text, language) {
@@ -360,23 +512,11 @@ function speakRussian(text) {
 }
 
 function speakWord(word) {
-    const cleanWord = word.replace(/[.,!?]/g, "").toLocaleLowerCase("tr-TR");
-    const match = state.current.wordMap.find(item =>
-        item.word.toLocaleLowerCase("tr-TR") === cleanWord
-    );
-    const russianWord = containsRussian(word) ? word : match?.meaning;
-    if (russianWord && containsRussian(russianWord)) speakRussian(russianWord);
-}
-
-function speakRussianAfterDelay(text) {
-    if (containsRussian(text)) window.setTimeout(() => speakRussian(text), 280);
+    speak(word.replace(/[.,!?;:]/g, ""), state.current.language);
 }
 
 function speakRussianForCurrentQuestion() {
-    const russianText = containsRussian(state.current.promptText)
-        ? state.current.promptText
-        : state.current.correctAnswer;
-    speakRussian(russianText);
+    if (containsRussian(state.current.promptText)) speakRussian(state.current.promptText);
 }
 
 function scheduleAutomaticRussianSpeech() {
@@ -477,6 +617,7 @@ function setMode(mode) {
     $("tab-sentence").classList.toggle("active", mode === "sentence");
     $("grammar-subtabs").hidden = mode !== "grammar";
     $("sentence-subtabs").hidden = mode !== "sentence";
+    saveCache();
     refreshQuestionSession();
 }
 
@@ -485,6 +626,7 @@ function setCategory(category) {
     state.category = category;
     $("subtab-fiil").classList.toggle("active", category === "fiil");
     $("subtab-isim").classList.toggle("active", category === "isim");
+    saveCache();
     if (state.mode === "grammar") refreshQuestionSession();
 }
 
@@ -492,17 +634,19 @@ function setAnswerType(type) {
     state.answerType = type;
     $("subtab-tiles").classList.toggle("active", type === "tiles");
     $("subtab-mc").classList.toggle("active", type === "mc");
+    saveCache();
     if (state.mode === "sentence") refreshQuestionSession();
 }
 
 function toggleReverseMode() {
     state.reverse = !state.reverse;
     $("reverse-label").textContent = state.reverse ? "TR → RU" : "RU → TR";
+    saveCache();
     refreshQuestionSession();
 }
 
 function speakQuestionText() {
-    if (state.current) speakRussianForCurrentQuestion();
+    if (state.current) speak(state.current.promptText, state.current.language);
 }
 
 const brandMark = document.querySelector('.brand-mark');

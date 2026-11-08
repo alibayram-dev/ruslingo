@@ -30,6 +30,10 @@ Projeye GitHub Pages üzerinden ulaşabilirsiniz:
 - Cümle kalıpları için ayrıntılı gramer açıklamaları
 - Masaüstü ve mobil uyumlu arayüz
 - Yeni soruları önceden hazırlayan soru kuyruğu
+- Aynı şıkların tekrarını engelleyen seçenek üretimi
+- Son soruyu ve yakın soru geçmişini tekrar göstermeyen soru seçimi
+- Yanlış cevaplanan soruları oransal olarak daha sık getiren tekrar sistemi
+- Tarayıcı `localStorage` önbelleği ile ayar, istatistik ve soru geçmişi saklama
 
 ## Kullanılan Teknolojiler
 
